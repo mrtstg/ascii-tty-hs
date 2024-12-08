@@ -69,7 +69,7 @@ processFrame env@(AppEnv { .. }) (currentFrame:acc) = let
   let diffH = (tH - length pixels) `div` 2
   let diffW = (tW - targetW) `div` 2
 
-  setSGR [SetColor Background Dull Black]
+  when supportsANSI $ setSGR [SetColor Background Dull Black]
   mapM_ (f'' diffW supportsANSI) pixels
   putStr $ replicate diffH '\n'
   _ <- threadDelay framePauseTime
