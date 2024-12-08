@@ -22,6 +22,7 @@ dependencies:
 - JuicyPixels == 3.3.9
 - friday-juicypixels == 0.1.2.4
 - vector == 0.13.1.0
+- split == 0.2.5
 
 ghc-options:
 - -Wall

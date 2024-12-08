@@ -5,10 +5,16 @@ module App.Commands (runCommand) where
 import           App.Types
 import           Codec.Picture
 import           Control.Concurrent           (threadDelay)
-import           Data.List                    (sortOn)
+import           Control.Monad                (when)
+import           Data.List                    (intercalate, sortOn)
+import           Data.List.Split
 import           Data.Maybe
+import qualified Data.Vector                  as VV
+import           Data.Vector.Generic          (convert)
 import qualified Data.Vector.Storable         as V
+import           Data.Word
 import           System.Console.ANSI
+import           System.Console.ANSI.Types
 import           System.Console.Terminal.Size
 import           System.Directory
 import           System.FilePath
@@ -17,7 +23,10 @@ import           Text.Read
 import qualified Vision.Image                 as I
 import           Vision.Image                 (RGBPixel)
 import           Vision.Image.JuicyPixels
+import qualified Vision.Image.Transform       as T
 import           Vision.Primitive.Shape
+
+asciiChars = reverse ['@', '#', '$', '%', '?', '*', '+', ';', ':', ',', '.']
 
 getTerminalSize' :: (Int, Int) -> IO (Int, Int)
 getTerminalSize' imageSize = do
@@ -26,26 +35,57 @@ getTerminalSize' imageSize = do
     Nothing                -> return imageSize
     (Just (Window { .. })) -> return (height, width)
 
-processFrame :: [I.Manifest RGBPixel] -> [I.Manifest RGBPixel] -> IO ()
-processFrame allFrames (currentFrame:acc) = do
-  terminalSize <- getTerminalSize' (0, 0)
-  let (Z :. h :. w) = I.manifestSize currentFrame
-  print (h, w)
-  print terminalSize
-  _ <- threadDelay 1000000
-  processFrame allFrames acc
-processFrame [] _ = error "No frames provided!"
-processFrame allFrames [] = processFrame allFrames allFrames
+processFrame :: AppEnv -> [I.Manifest RGBPixel] -> IO ()
+processFrame env@(AppEnv { .. }) (currentFrame:acc) = let
+  f :: RGBPixel -> (Char, Word8)
+  f (I.RGBPixel r g b) = (asciiChars !! (avg `div` 25), xterm6LevelRGB (fromIntegral r `div` 43) (fromIntegral g `div` 43) (fromIntegral b `div` 43)) where
+    avg :: Int
+    avg = fromIntegral (r + g + b)
 
-runRunCommand :: FilePath -> IO ()
-runRunCommand framesPath = let
+  f' :: Bool -> [(Char, Word8)] -> IO ()
+  f' _ [] = putStr "\n"
+  f' useColor ((sym, c):lst) = do
+    when useColor $ setSGR [SetPaletteColor Foreground c]
+    putStr [sym]
+    f' useColor lst
+
+  f'' :: Int -> Bool -> [(Char, Word8)] -> IO ()
+  f'' spaceAmount ansi row = do
+    _ <- putStr $ replicate spaceAmount ' '
+    f' ansi row
+  in do
+  let (Z :. h :. w) = I.manifestSize currentFrame
+
+  (tH, tW) <- getTerminalSize' (h, w)
+  let ratioH = (fromIntegral (min 101 tH) / fromIntegral h) * (fromIntegral h / fromIntegral w)
+  let ratioW = (fromIntegral (min 388 tW) / fromIntegral w) * (fromIntegral h / fromIntegral w)  :: (Float)
+
+  let (targetH, targetW) = (round $ fromIntegral h * ratioH, round $ fromIntegral w * ratioW) :: (Int, Int)
+
+  let resizedImage = T.resize T.Bilinear (ix2 targetH targetW) currentFrame :: I.RGB
+  let pixels = (chunksOf targetW . VV.toList . VV.map f . convert) (I.manifestVector resizedImage)
+
+  -- difference between tty size and image
+  let diffH = (tH - length pixels) `div` 2
+  let diffW = (tW - targetW) `div` 2
+
+  setSGR [SetColor Background Dull Black]
+  mapM_ (f'' diffW supportsANSI) pixels
+  putStr $ replicate diffH '\n'
+  _ <- threadDelay framePauseTime
+  _ <- clearScreen
+  processFrame env acc
+processFrame (AppEnv { images = []}) _ = error "No frames provided!"
+processFrame env@(AppEnv { images = allFrames }) [] = processFrame env allFrames
+
+runRunCommand :: FilePath -> Int -> IO ()
+runRunCommand framesPath pauseTime = let
   f :: DynamicImage -> Image PixelRGB8
   f (ImageRGB8 i) = i
   f otherImage    = convertRGB8 otherImage
   in do
   supportsANSI <- hNowSupportsANSI stdout
   frameFiles <- listDirectory framesPath
-  -- TODO: not only jpg support
   let filteredNames = sortOn ((\x -> Text.Read.read x :: Int) . dropExtensions) $ filter (isJust . (\x -> readMaybe x :: Maybe Int) . dropExtensions) frameFiles
   imagesLoad <- mapM (readImage . (\x -> framesPath `combine` x)) filteredNames
   case sequence imagesLoad of
@@ -54,7 +94,7 @@ runRunCommand framesPath = let
       let convertedImages = map (toFridayRGB . f) images
       putStrLn "Loaded images!"
       _ <- clearScreen
-      processFrame convertedImages convertedImages
+      processFrame (AppEnv {supportsANSI = supportsANSI, images = convertedImages, framePauseTime = pauseTime }) []
 
 runCommand :: AppOpts -> IO ()
-runCommand (AppOpts { appCommand = Run,.. }) = runRunCommand framesPath
+runCommand (AppOpts { appCommand = Run,.. }) = runRunCommand framesPath pauseTime

@@ -13,4 +13,5 @@ appParser = AppOpts <$>
   strOption (long "frames" <> short 'f' <> metavar "PATH" <> value "./frames/" <> help "Folder with images") <*>
   subparser (
     command "run" (info runParser (progDesc "Start program"))
-    )
+    ) <*>
+  option auto (long "pause" <> short 'p' <> value 1000000 <> help "Sleep N ms after frame change")
