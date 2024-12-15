@@ -60,7 +60,7 @@ processFrame env@(AppEnv { .. }) (currentFrame:acc) = let
 
   let ratioH = fromIntegral (min 101 tH) / fromIntegral h
 
-  let (targetH, targetW) = (round $ fromIntegral h * ratioH, round $ ratioH * fromIntegral w * 2.0) :: (Int, Int)
+  let (targetH, targetW) = (min tH (round $ fromIntegral h * ratioH), min tW (round $ ratioH * fromIntegral w * 2.0)) :: (Int, Int)
 
   let resizedImage = T.resize T.Bilinear (ix2 targetH targetW) currentFrame :: I.RGB
   let pixels = (chunksOf targetW . VV.toList . VV.map f . convert) (I.manifestVector resizedImage)
