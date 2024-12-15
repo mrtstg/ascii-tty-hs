@@ -23,7 +23,7 @@ ascii-tty-hs has only command - `run`. It will start the program
 - `--start/-s <N>` - start showing images at Nth frame
 - `--shuffle` - flag for shuffling images after full list pass
 
-## Builing
+## Building
 
 If you don't have stack, you can build binary file in Docker using Docker buildX plugin:
 
