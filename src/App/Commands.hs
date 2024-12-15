@@ -57,10 +57,10 @@ processFrame env@(AppEnv { .. }) (currentFrame:acc) = let
   let (Z :. h :. w) = I.manifestSize currentFrame
 
   (tH, tW) <- getTerminalSize' (h, w)
-  let ratioH = (fromIntegral (min 101 tH) / fromIntegral h) * (fromIntegral h / fromIntegral w)
-  let ratioW = (fromIntegral (min 388 tW) / fromIntegral w) * (fromIntegral h / fromIntegral w)  :: (Float)
 
-  let (targetH, targetW) = (round $ fromIntegral h * ratioH, round $ fromIntegral w * ratioW) :: (Int, Int)
+  let ratioH = fromIntegral (min 101 tH) / fromIntegral h
+
+  let (targetH, targetW) = (round $ fromIntegral h * ratioH, round $ ratioH * fromIntegral w * 2.0) :: (Int, Int)
 
   let resizedImage = T.resize T.Bilinear (ix2 targetH targetW) currentFrame :: I.RGB
   let pixels = (chunksOf targetW . VV.toList . VV.map f . convert) (I.manifestVector resizedImage)
