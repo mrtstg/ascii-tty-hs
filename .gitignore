@@ -4,3 +4,4 @@ dist-newstyle/
 tags
 src/**/tags
 frames
+deployment/ascii-tty-hs
