@@ -23,6 +23,8 @@ dependencies:
 - friday-juicypixels == 0.1.2.4
 - vector == 0.13.1.0
 - split == 0.2.5
+- random == 1.2.1.2
+- random-shuffle == 0.0.4
 
 ghc-options:
 - -Wall

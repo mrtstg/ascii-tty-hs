@@ -19,6 +19,8 @@ import           System.Console.Terminal.Size
 import           System.Directory
 import           System.FilePath
 import           System.IO                    (stdout)
+import           System.Random                (newStdGen)
+import           System.Random.Shuffle
 import           Text.Read
 import qualified Vision.Image                 as I
 import           Vision.Image                 (RGBPixel)
@@ -76,14 +78,19 @@ processFrame env@(AppEnv { .. }) (currentFrame:acc) = let
   _ <- clearScreen
   processFrame env acc
 processFrame (AppEnv { images = []}) _ = error "No frames provided!"
-processFrame env@(AppEnv { images = allFrames }) [] = processFrame env allFrames
+processFrame env@(AppEnv { images = allFrames, .. }) [] = do
+  if shuffleFrames then do
+    randomGen <- newStdGen
+    processFrame env $ shuffle' allFrames frameAmount randomGen
+  else processFrame env allFrames
 
-runRunCommand :: FilePath -> Int -> Int -> IO ()
-runRunCommand framesPath pauseTime startAt = let
+runRunCommand :: AppOpts -> IO ()
+runRunCommand (AppOpts { .. }) = let
   f :: DynamicImage -> Image PixelRGB8
   f (ImageRGB8 i) = i
   f otherImage    = convertRGB8 otherImage
   in do
+  random <- newStdGen
   supportsANSI <- hNowSupportsANSI stdout
   frameFiles <- listDirectory framesPath
   let filteredNames = drop (startAt - 1) $ sortOn ((\x -> Text.Read.read x :: Int) . dropExtensions) $ filter (isJust . (\x -> readMaybe x :: Maybe Int) . dropExtensions) frameFiles
@@ -94,7 +101,13 @@ runRunCommand framesPath pauseTime startAt = let
       let convertedImages = map (toFridayRGB . f) images
       putStrLn "Loaded images!"
       _ <- clearScreen
-      processFrame (AppEnv {supportsANSI = supportsANSI, images = convertedImages, framePauseTime = pauseTime }) []
+      processFrame (AppEnv
+        { supportsANSI = supportsANSI
+        , images = convertedImages
+        , framePauseTime = pauseTime
+        , frameAmount = length convertedImages
+        , shuffleFrames = shuffle
+        }) []
 
 runCommand :: AppOpts -> IO ()
-runCommand (AppOpts { appCommand = Run,.. }) = runRunCommand framesPath pauseTime startAt
+runCommand opts@(AppOpts { appCommand = Run,.. }) = runRunCommand opts

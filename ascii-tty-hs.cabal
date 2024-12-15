@@ -44,6 +44,8 @@ library
     , friday ==0.2.3.2
     , friday-juicypixels ==0.1.2.4
     , optparse-applicative ==0.18.1.0
+    , random ==1.2.1.2
+    , random-shuffle ==0.0.4
     , split ==0.2.5
     , terminal-size ==0.3.4
     , vector ==0.13.1.0
@@ -68,6 +70,8 @@ executable ascii-tty-hs-exe
     , friday ==0.2.3.2
     , friday-juicypixels ==0.1.2.4
     , optparse-applicative ==0.18.1.0
+    , random ==1.2.1.2
+    , random-shuffle ==0.0.4
     , split ==0.2.5
     , terminal-size ==0.3.4
     , vector ==0.13.1.0
@@ -93,6 +97,8 @@ test-suite ascii-tty-hs-test
     , friday ==0.2.3.2
     , friday-juicypixels ==0.1.2.4
     , optparse-applicative ==0.18.1.0
+    , random ==1.2.1.2
+    , random-shuffle ==0.0.4
     , split ==0.2.5
     , terminal-size ==0.3.4
     , vector ==0.13.1.0

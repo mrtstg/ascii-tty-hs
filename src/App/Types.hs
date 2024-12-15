@@ -4,12 +4,16 @@ module App.Types
   , AppEnv(..)
   ) where
 
-import qualified Vision.Image as I
+import           System.Random (StdGen)
+
+import qualified Vision.Image  as I
 
 data AppEnv = AppEnv
   { supportsANSI   :: !Bool
   , images         :: ![I.RGB]
+  , frameAmount    :: !Int
   , framePauseTime :: !Int
+  , shuffleFrames  :: !Bool
   }
 
 data AppOpts = AppOpts
@@ -17,6 +21,7 @@ data AppOpts = AppOpts
   , appCommand :: !AppCommand
   , pauseTime  :: !Int
   , startAt    :: !Int
+  , shuffle    :: !Bool
   } deriving Show
 
 data AppCommand = Run deriving (Enum, Eq, Show)
