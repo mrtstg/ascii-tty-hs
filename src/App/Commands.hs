@@ -78,15 +78,15 @@ processFrame env@(AppEnv { .. }) (currentFrame:acc) = let
 processFrame (AppEnv { images = []}) _ = error "No frames provided!"
 processFrame env@(AppEnv { images = allFrames }) [] = processFrame env allFrames
 
-runRunCommand :: FilePath -> Int -> IO ()
-runRunCommand framesPath pauseTime = let
+runRunCommand :: FilePath -> Int -> Int -> IO ()
+runRunCommand framesPath pauseTime startAt = let
   f :: DynamicImage -> Image PixelRGB8
   f (ImageRGB8 i) = i
   f otherImage    = convertRGB8 otherImage
   in do
   supportsANSI <- hNowSupportsANSI stdout
   frameFiles <- listDirectory framesPath
-  let filteredNames = sortOn ((\x -> Text.Read.read x :: Int) . dropExtensions) $ filter (isJust . (\x -> readMaybe x :: Maybe Int) . dropExtensions) frameFiles
+  let filteredNames = drop (startAt - 1) $ sortOn ((\x -> Text.Read.read x :: Int) . dropExtensions) $ filter (isJust . (\x -> readMaybe x :: Maybe Int) . dropExtensions) frameFiles
   imagesLoad <- mapM (readImage . (\x -> framesPath `combine` x)) filteredNames
   case sequence imagesLoad of
     (Left e) -> putStrLn $ "Image load error: " <> show e
@@ -97,4 +97,4 @@ runRunCommand framesPath pauseTime = let
       processFrame (AppEnv {supportsANSI = supportsANSI, images = convertedImages, framePauseTime = pauseTime }) []
 
 runCommand :: AppOpts -> IO ()
-runCommand (AppOpts { appCommand = Run,.. }) = runRunCommand framesPath pauseTime
+runCommand (AppOpts { appCommand = Run,.. }) = runRunCommand framesPath pauseTime startAt

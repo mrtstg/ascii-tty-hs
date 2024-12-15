@@ -14,4 +14,5 @@ appParser = AppOpts <$>
   subparser (
     command "run" (info runParser (progDesc "Start program"))
     ) <*>
-  option auto (long "pause" <> short 'p' <> value 1000000 <> help "Sleep N ms after frame change")
+  option auto (long "pause" <> short 'p' <> value 1000000 <> help "Sleep N ms after frame change") <*>
+  option auto (long "start" <> short 's' <> value 1 <> help "Start at Nth frame")

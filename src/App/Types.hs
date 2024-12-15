@@ -16,6 +16,7 @@ data AppOpts = AppOpts
   { framesPath :: !FilePath
   , appCommand :: !AppCommand
   , pauseTime  :: !Int
+  , startAt    :: !Int
   } deriving Show
 
 data AppCommand = Run deriving (Enum, Eq, Show)
